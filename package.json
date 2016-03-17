@@ -1,0 +1,37 @@
+{
+  "name": "qc-client-pool",
+  "version": "0.1.0",
+  "description": "Pool Querycache connections for Node.js",
+  "keywords": [
+    "querycache",
+    "qc",
+    "qc-client",
+    "pool"
+  ],
+  "engines": {
+    "node": ">=0.12.8"
+  },
+  "scripts": {
+    "test": "./node_modules/lab/bin/lab -C -c -m 20000 --leaks",
+    "eslint": "./node_modules/eslint/bin/eslint.js ./index.js ./example/example.js",
+    "coverage" : "if test -f './converage.html'; then  rm coverage.html; fi && lab -r html -o coverage.html"
+  },
+  "dependencies": {
+    "qc-client": "0.20.3",
+    "co":"4.x.x",
+    "generic-pool":"2.4.1",
+    "underscore": "~1.8.3"
+
+  },
+  "devDependencies": {
+    "lab":"~10.x.x",
+    "eslint":"^2.4.x",
+    "code": "2.x.x"
+  },
+  "author": "uzysjung",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/skpdi/qc-client-pool.git"
+  }
+}

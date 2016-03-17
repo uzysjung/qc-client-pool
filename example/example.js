@@ -1,12 +1,11 @@
-# qc-client-pool
-Pool Querycache connections for Node.js
-
-## Examples
-
-```js
+/**
+ * Created by uzysjung on 2016. 3. 16..
+ */
+'use strict';
 const QCPool = require("../index");
 const co = require('co');
 const qcPool = new QCPool({min: 5,max:10},'your_server','','');
+
 co(function*(){
 
     try {
@@ -31,8 +30,3 @@ co(function*(){
     console.log("MaxPoolsize : ",qcPool.getMaxPoolSize());
 
 });
-```
-
-## License
-
-  MIT
