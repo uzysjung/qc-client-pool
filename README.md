@@ -11,7 +11,7 @@ $ npm install qc-client-pool
 ```js
 const QCPool = require("../index");
 const co = require('co');
-const qcPool = new QCPool({min: 5,max:10},'your_server','','');
+const qcPool = new QCPool({min: 5,max:10},'your_server','id','password');
 co(function*(){
 
     try {
