@@ -1,6 +1,11 @@
 # qc-client-pool
 Pool Querycache connections for Node.js
 
+## Installation
+
+```
+$ npm install qc-client-pool
+```
 ## Examples
 
 ```js
