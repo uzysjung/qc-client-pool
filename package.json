@@ -1,6 +1,6 @@
 {
   "name": "qc-client-pool",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Pool Querycache connections for Node.js",
   "keywords": [
     "querycache",
@@ -17,7 +17,7 @@
     "coverage" : "if test -f './converage.html'; then  rm coverage.html; fi && lab -r html -o coverage.html"
   },
   "dependencies": {
-    "qc-client": "0.20.3",
+    "di-qc-client": "0.21.0",
     "co":"4.x.x",
     "generic-pool":"2.4.1",
     "underscore": "~1.8.3"

@@ -122,3 +122,22 @@ internals.qcPool.prototype.query = function(connection,sql,option) {
         });
     });
 };
+
+internals.qcPool.prototype.queryUpsert = function(connection,sql) {
+    var self = this;
+    return new Promise(function(resolve,reject){
+        co(function*(){
+            let stmt = connection.createStatement();
+            let hasResultSet = yield stmt.execute(sql);
+            let result = yield stmt.setCommit();
+
+            self.pool.release(connection);
+
+            resolve(result);
+
+        }).catch(function(e){
+            self.pool.release(connection);
+            reject(e);
+        });
+    });
+}
