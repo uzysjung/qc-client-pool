@@ -3,7 +3,7 @@
  */
 'use strict';
 
-const qcClient = require('qc-client');
+const qcClient = require('di-qc-client');
 const Pool = require('generic-pool').Pool;
 const co = require('co');
 const _  = require('underscore');
