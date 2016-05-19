@@ -33,6 +33,14 @@ exports = module.exports = internals.qcPool = function(option,url,id,pass) {
             //console.log("QC Pool destroy called");
             connection.close();
         },
+        validate : function(connection) {
+
+            if(connection.connectionError) {
+                console.log('error remove on validate');
+                return false;
+            }
+            return true;
+        },
         min: 2,
         max: 10,
         idleTimeoutMillis: 30000
