@@ -86,16 +86,17 @@ internals.qcPool.prototype.getMaxPoolSize= function() {
 
 internals.qcPool.prototype.query = function(connection,sql,option) {
     var self = this;
-    return new Promise(function(resolve,reject){
-        co(function*(){
-            let results = [];
-            let stmt = connection.createStatement();
+    let fn = co(function*(){
+        let resultSet,stmt;
+        let results = [];
+        try {
+            stmt = connection.createStatement();
             let hasResultSet = yield stmt.execute(sql);
             if (!hasResultSet) {
                 throw new Error("query affected " + stmt.updateRowCount + " rows.");
             }
 
-            let resultSet = yield stmt.getResultSet();
+            resultSet = yield stmt.getResultSet();
             if (resultSet == null) {
                 throw new Error("query has no result set. (BUG?)");
             }
@@ -115,6 +116,9 @@ internals.qcPool.prototype.query = function(connection,sql,option) {
                 }
             }
 
+        } catch(e) {
+            throw e;
+        } finally {
             if (resultSet) {
                 yield resultSet.close();
             }
@@ -122,13 +126,11 @@ internals.qcPool.prototype.query = function(connection,sql,option) {
                 yield stmt.close();
             }
             self.pool.release(connection);
-            resolve(results);
-
-        }).catch(function(e){
-            self.pool.release(connection);
-            reject(e);
-        });
+            return results;
+        }
     });
+
+    return fn;
 };
 
 internals.qcPool.prototype.queryUpsert = function(connection,sql) {
