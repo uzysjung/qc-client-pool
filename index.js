@@ -43,7 +43,8 @@ exports = module.exports = internals.qcPool = function(option,url,id,pass) {
         },
         min: 2,
         max: 10,
-        idleTimeoutMillis: 30000
+        idleTimeoutMillis: 30000,
+        queryTimeout : 5000 //5 sec
     };
     property =_.extend(property,option);
     this.pool = new Pool(property);
@@ -86,7 +87,7 @@ internals.qcPool.prototype.getMaxPoolSize= function() {
 
 internals.qcPool.prototype.query = function(connection,sql,option) {
     var self = this;
-    let fn = function*(){
+    let fn = co(function*(){
         let resultSet,stmt;
         let results = [];
         try {
@@ -115,53 +116,80 @@ internals.qcPool.prototype.query = function(connection,sql,option) {
                     break;
                 }
             }
-
-        } catch(e) {
-            throw e;
-        } finally {
             if (resultSet) {
                 yield resultSet.close();
             }
             if (stmt) {
                 yield stmt.close();
             }
-            self.pool.release(connection);
-            return results;
+        } catch(e) {
+            throw e;
+        } finally {
         }
+        return results;
+
+    });
+
+    function timeout(interval) {
+        return new Promise(function (resolve, reject) {
+            setTimeout(function(){
+                reject(new Error('timeout: exceed ' + interval + 'ms'));
+            }, interval || 0);
+        })
     };
 
-    return _koTimeout(fn,self,connection,self.pool._factory.queryTimeout);
+    return co(function*(){
+        let results;
+        try {
+            results = yield Promise.race([timeout(self.pool._factory.queryTimeout),fn])
+        } catch(e){
+            connection.connectionError = e;
+            console.error('qcPool Query Error',e.stack);
+            throw e;
+        } finally  {
+            self.pool.release(connection);
+        }
+        return results;
+
+    });
 };
 
 internals.qcPool.prototype.queryUpsert = function(connection,sql) {
     var self = this;
-    let fn = function*(){
+    let fn = co(function*(){
         try {
             let stmt = connection.createStatement();
             let hasResultSet = yield stmt.execute(sql);
             let result = yield stmt.setCommit();
-        } catch(e){
-            throw e
-        } finally {
             if(stmt) {
                 yield stmt.close();
             }
-            self.pool.release(connection);
-            return result
+
+        } catch(e){
+            throw e
+        } finally {
         }
+        return result;
+    });
+    function timeout(interval) {
+        return new Promise(function (resolve, reject) {
+            setTimeout(function(){
+                reject(new Error('timeout: exceed ' + interval + 'ms'));
+            }, interval || 0);
+        })
     };
-    return _koTimeout(fn,self,connection,self.pool._factory.queryTimeout);
+    return co(function*(){
+        let result;
+        try {
+            result = yield Promise.race([timeout(self.pool._factory.queryTimeout),fn])
+        } catch (e){
+            connection.connectionError = e;
+            console.error('qcPool Query Error :',e.stack);
+            throw e;
+        } finally  {
+            self.pool.release(connection);
+        }
+        return result;
+    });
 };
 
-
-let _koTimeout = function (gen,self,connection, time) {
-    return new Promise(function (resolve, reject) {
-        setTimeout(function () {
-            connection.connectionError = new Error('timeout: exceed ' + time + 'ms');
-            self.pool.release(connection);
-            reject(connection.connectionError);
-        }, time)
-
-        co(gen).then(resolve).catch(reject);
-    })
-}
