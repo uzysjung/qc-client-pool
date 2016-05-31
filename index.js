@@ -86,7 +86,7 @@ internals.qcPool.prototype.getMaxPoolSize= function() {
 
 internals.qcPool.prototype.query = function(connection,sql,option) {
     var self = this;
-    let fn = co(function*(){
+    let fn = function*(){
         let resultSet,stmt;
         let results = [];
         try {
@@ -128,26 +128,40 @@ internals.qcPool.prototype.query = function(connection,sql,option) {
             self.pool.release(connection);
             return results;
         }
-    });
+    };
 
-    return fn;
+    return _koTimeout(fn,self,connection,self.pool._factory.queryTimeout);
 };
 
 internals.qcPool.prototype.queryUpsert = function(connection,sql) {
     var self = this;
-    return new Promise(function(resolve,reject){
-        co(function*(){
+    let fn = function*(){
+        try {
             let stmt = connection.createStatement();
             let hasResultSet = yield stmt.execute(sql);
             let result = yield stmt.setCommit();
-
+        } catch(e){
+            throw e
+        } finally {
+            if(stmt) {
+                yield stmt.close();
+            }
             self.pool.release(connection);
+            return result
+        }
+    };
+    return _koTimeout(fn,self,connection,self.pool._factory.queryTimeout);
+};
 
-            resolve(result);
 
-        }).catch(function(e){
+let _koTimeout = function (gen,self,connection, time) {
+    return new Promise(function (resolve, reject) {
+        setTimeout(function () {
+            connection.connectionError = new Error('timeout: exceed ' + time + 'ms');
             self.pool.release(connection);
-            reject(e);
-        });
-    });
+            reject(connection.connectionError);
+        }, time)
+
+        co(gen).then(resolve).catch(reject);
+    })
 }
