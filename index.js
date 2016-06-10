@@ -123,6 +123,12 @@ internals.qcPool.prototype.query = function(connection,sql,option) {
                 yield stmt.close();
             }
         } catch(e) {
+            if (resultSet) {
+                yield resultSet.close();
+            }
+            if (stmt) {
+                yield stmt.close();
+            }
             throw e;
         } finally {
         }
@@ -167,6 +173,9 @@ internals.qcPool.prototype.queryUpsert = function(connection,sql) {
             }
 
         } catch(e){
+            if(stmt) {
+                yield stmt.close();
+            }
             throw e
         } finally {
         }
