@@ -1,6 +1,6 @@
 {
   "name": "qc-client-pool",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Pool Querycache connections for Node.js",
   "keywords": [
     "querycache",
