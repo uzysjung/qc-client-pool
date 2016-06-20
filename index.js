@@ -163,9 +163,9 @@ internals.qcPool.prototype.query = function(connection,sql,option) {
 internals.qcPool.prototype.queryUpsert = function(connection,sql) {
     var self = this;
     let fn = co(function*(){
-        let result;
+        let result,stmt;
         try {
-            let stmt = connection.createStatement();
+            stmt = connection.createStatement();
             let hasResultSet = yield stmt.execute(sql);
             result = yield stmt.setCommit();
             if(stmt) {
