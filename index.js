@@ -85,13 +85,18 @@ internals.qcPool.prototype.getMaxPoolSize= function() {
     return this.pool.getMaxPoolSize();
 };
 
-internals.qcPool.prototype.query = function(connection,sql,option) {
+internals.qcPool.prototype.query = function(client,sql,option) {
     var self = this;
     let fn = co(function*(){
-        let resultSet,stmt;
+        let resultSet,stmt, err;
         let results = [];
+        let cbErr;
         try {
-            stmt = connection.createStatement();
+            cbErr = function(conn_error) {
+              throw conn_error;  
+            };
+            client.connection.on('error',cbErr);
+            stmt = client.createStatement();
             let hasResultSet = yield stmt.execute(sql);
             if (!hasResultSet) {
                 throw new Error("query affected " + stmt.updateRowCount + " rows.");
@@ -116,24 +121,21 @@ internals.qcPool.prototype.query = function(connection,sql,option) {
                     break;
                 }
             }
-            if (resultSet) {
-                yield resultSet.close();
-            }
-            if (stmt) {
-                yield stmt.close();
-            }
         } catch(e) {
+            err = e;
+        } finally {
             if (resultSet) {
                 yield resultSet.close();
             }
             if (stmt) {
                 yield stmt.close();
             }
-            throw e;
-        } finally {
+            if(cbErr && client.connection)
+                client.connection.removeListener('error',cbErr);
+
+            if(err) throw err;
         }
         return results;
-
     });
 
     function timeout(interval) {
@@ -145,39 +147,44 @@ internals.qcPool.prototype.query = function(connection,sql,option) {
     };
 
     return co(function*(){
-        let results;
+        let results,err;
         try {
             results = yield Promise.race([timeout(self.pool._factory.queryTimeout),fn])
         } catch(e){
-            connection.connectionError = e;
+            client.connectionError = e;
+            err = e ;
             console.error('qcPool Query Error',e.stack);
-            throw e;
         } finally  {
-            self.pool.release(connection);
+            self.pool.release(client);
+            if(err) throw err;
         }
         return results;
 
     });
 };
 
-internals.qcPool.prototype.queryUpsert = function(connection,sql) {
+internals.qcPool.prototype.queryUpsert = function(client,sql) {
     var self = this;
     let fn = co(function*(){
-        let result,stmt;
+        let result,stmt,err,cbErr;
         try {
-            stmt = connection.createStatement();
+            cbErr = function(conn_error) {
+              throw conn_error;  
+            };
+            client.connection.on('error',cbErr);
+            stmt = client.createStatement();
             let hasResultSet = yield stmt.execute(sql);
             result = yield stmt.setCommit();
-            if(stmt) {
-                yield stmt.close();
-            }
-
+            
         } catch(e){
+            err = e ;
+        } finally {
             if(stmt) {
                 yield stmt.close();
             }
-            throw e
-        } finally {
+            if(cbErr && client.connection)
+                client.connection.removeListener('error',cbErr);
+            if(err) throw err;
         }
         return result;
     });
@@ -189,15 +196,16 @@ internals.qcPool.prototype.queryUpsert = function(connection,sql) {
         })
     };
     return co(function*(){
-        let result;
+        let result,error;
         try {
             result = yield Promise.race([timeout(self.pool._factory.queryTimeout),fn])
         } catch (e){
-            connection.connectionError = e;
+            client.connectionError = e;
             console.error('qcPool Query Error :',e.stack);
-            throw e;
+            error = e;
         } finally  {
-            self.pool.release(connection);
+            self.pool.release(client);
+            if(error) throw e;
         }
         return result;
     });
