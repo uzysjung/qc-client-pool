@@ -30,8 +30,12 @@ exports = module.exports = internals.qcPool = function(option,url,id,pass) {
             });
         },
         destroy  : function(connection) {
-            //console.log("QC Pool destroy called");
-            connection.close();
+            co(function*(){
+                // console.log("QC Pool destroy called");
+                yield connection.close();
+            }).catch(function(e){
+                console.error("QC Pool destroy error occured :",e.stack);
+            });
         },
         validate : function(connection) {
 
@@ -205,7 +209,7 @@ internals.qcPool.prototype.queryUpsert = function(client,sql) {
             error = e;
         } finally  {
             self.pool.release(client);
-            if(error) throw e;
+            if(error) throw error;
         }
         return result;
     });
