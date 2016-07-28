@@ -150,10 +150,16 @@ internals.qcPool.prototype.query = function(client,sql,option) {
         })
     };
 
-    return co(function*(){
+    let queryTimeout = self.pool._factory.queryTimeout;
+    if(option && option.queryTimeout) {
+        queryTimeout = option.queryTimeout;
+    }
+
+    return co( function*() {
+
         let results,err;
         try {
-            results = yield Promise.race([timeout(self.pool._factory.queryTimeout),fn])
+            results = yield Promise.race([timeout(queryTimeout),fn]);
         } catch(e){
             client.connectionError = e;
             err = e ;
