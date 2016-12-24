@@ -40,7 +40,7 @@ exports = module.exports = internals.qcPool = function(option,url,id,pass) {
         validate : function(connection) {
 
             if(connection.connectionError) {
-                console.log('error remove on validate');
+                console.log('error remove on validate',connection.connectionError);
                 return false;
             }
             return true;
